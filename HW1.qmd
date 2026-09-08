@@ -1,0 +1,11 @@
+---
+title: "HW1"
+author: "Larry Cheng"
+format: 
+  html:
+    embed-resources: true
+---
+
+Link to repo: https://github.com/LarryC-24/Homework_1
+
+## Problem 1
