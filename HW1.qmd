@@ -6,6 +6,232 @@ format:
     embed-resources: true
 ---
 
-Link to repo: https://github.com/LarryC-24/Homework_1
+[Link to repo](https://github.com/LarryC-24/Homework_1)
 
 ## Problem 1
+
+### Part a
+```{r}
+library(tidyverse)
+# read data and name columns
+data <- read.csv("data.csv")
+colnames(data) <- c("Season", "Cultivar", "Repetition", "Plant_Height", "Insert_First", "Stem_Num", "Legume_Num", "Grain_Num", "Grain_Pod", "Weight", "Grain_Yield")
+```
+
+### Part b
+```{r}
+# There are 320 rows (observations) in the dataset
+print(nrow(data))
+# There are 40 unique cultivars and 2 unique seasons in the dataset
+print(length(unique(data$Cultivar)))
+print(length(unique(data$Season)))
+# Observations in each season
+season_count <- data |> 
+  group_by(Season) |> 
+  count()
+print(season_count)
+```
+
+### Part c
+```{r}
+# Correlation between PH and GY
+print(cor(data$Plant_Height, data$Grain_Yield))
+# Correlation between PH and GY for each season
+season_cor <- data |> 
+  group_by(Season) |> 
+  summarize(correlation = cor(Plant_Height, Grain_Yield))
+print(season_cor)
+# Grain yield for tallest soybean
+print(data[data$Plant_Height == max(data$Plant_Height),]$Grain_Yield)
+# Percentage of observations with MHG greater than average
+print(nrow(data[data$Weight>mean(data$Weight),])/nrow(data) * 100)
+# Highest average grain yield cultivar
+high_GY <- data |> 
+  group_by(Cultivar) |> 
+  summarize(ave_GY = mean(Grain_Yield)) |> 
+  filter(ave_GY == max(ave_GY))
+print(high_GY)
+```
+
+### Part d
+```{r}
+# Overall averages
+overall_ave <- data |> 
+  summarize(ave_Plant_Height = mean(Plant_Height), 
+            ave_Insert_First = mean(Insert_First),
+            ave_Stem_Num = mean(Stem_Num),
+            ave_Legume_Num = mean(Legume_Num),
+            ave_Grain_Num = mean(Grain_Num),
+            ave_Grain_Pod = mean(Grain_Pod),
+            ave_Weight = mean(Weight),
+            ave_Grain_Yield = mean(Grain_Yield)) |> 
+  mutate("Season" = "Overall", .before = 1)
+# Season Averages
+season_ave <- data |> 
+  group_by(Season) |> 
+  summarize(ave_Plant_Height = mean(Plant_Height), 
+            ave_Insert_First = mean(Insert_First),
+            ave_Stem_Num = mean(Stem_Num),
+            ave_Legume_Num = mean(Legume_Num),
+            ave_Grain_Num = mean(Grain_Num),
+            ave_Grain_Pod = mean(Grain_Pod),
+            ave_Weight = mean(Weight),
+            ave_Grain_Yield = mean(Grain_Yield))
+# Combine data frames
+ave_table <- rbind(overall_ave, season_ave)
+print(ave_table)
+```
+
+### Part e
+
+$$
+\begin{aligned}
+H_0: \mu_{GY1} = \mu_{GY2} \\
+H_A: \mu_{GY1} \neq \mu_{GY2}
+\end{aligned}
+$$
+
+```{r}
+# t-test with function
+t.test(filter(data, Season == 1)$Grain_Yield, filter(data, Season == 2)$Grain_Yield)
+# manual t-test
+stats_GY <- data |> 
+  group_by(Season) |> 
+  summarize(mu = mean(Grain_Yield),
+            sigma_sq = var(Grain_Yield),
+            n = n())
+t = (stats_GY$mu[1] - stats_GY$mu[2])/sqrt(stats_GY$sigma_sq[1]/stats_GY$n[1] + stats_GY$sigma_sq[2]/stats_GY$n[2])
+p = 2*(1-pt(t,nrow(data)-2))
+cat("t statistic:", t, "p-value:", p)
+```
+:::{.callout-tip icon="false"}
+## Answer
+Based on the results of the t-test, we fail to reject the null hypothesis that the grain yield between the two seasons does not differ at the significance level of 0.05.
+:::
+
+## Problem 2
+
+### Part a
+```{r}
+# read data
+data1 <- read.csv("adult.data", header = FALSE)
+```
+
+### Part b
+```{r}
+# clean names
+colnames(data1) <- c("age", "workclass", "fnlwgt", "edu", "edu_num", "marital_status", "occupation", "relationship", "race", "sex", "cap_gain", "cap_loss", "hrs_per_week", "native_country", "income")
+```
+
+### Part c
+```{r}
+# replace missing values (?) with NA
+data1[data1 == " ?"] <- NA
+# clean white spaces
+data1 <- data1 |> 
+  mutate(across(where(is.character), ~ trimws(., which = "left")))
+# count missing values in each column
+print(colSums(is.na(data1)))
+```
+
+### Part d
+```{r}
+# sample size before filter
+print(nrow(data1))
+# sample size after filter
+ten_hrs <- data1[data1$hrs_per_week >= 10,]
+print(nrow(ten_hrs))
+```
+
+### Part e
+```{r}
+# removing rows with missing values
+ten_hrs_clean <- na.omit(ten_hrs)
+```
+
+:::{.callout-tip icon="false"}
+## Answer
+It would be difficult to predict income using observations where data is missing, so they are removed.
+:::
+
+### Part f
+```{r}
+# filter observations
+ten_hrs_filtered <- ten_hrs_clean |> 
+  filter(edu != "Preschool", age >= 18, age <= 90)
+```
+
+### Part g
+```{r}
+print(nrow(ten_hrs_filtered))
+```
+
+## Question 3
+
+### Part a
+```{r}
+nextHappy <- function(n) {
+  if (round(n) != n | n < 0) {
+    stop("please enter a positive integer")
+  } # check for valid input
+  n_chr <- as.character(n) # convert number to string to separate digits later
+  n_digs <- as.numeric(strsplit(n_chr, split = "")[[1]]) # separates the digits in the character number, then converts each to a number
+  sum_sq <- sum(n_digs**2) # squares each separated digit and sums them
+  return(sum_sq)
+}
+
+# reproducing examples
+nextHappy(19)
+nextHappy(82)
+```
+
+### Part b
+```{r}
+happySequence <- function(n) {
+  if (round(n) != n | n < 0) {
+    stop("please enter a positive integer")
+  } # check for valid input
+  sequence <- c(n) # start vector containing sequence
+  next_num <- nextHappy(n) # find next number in sequence
+  while(!(next_num %in% sequence) & next_num != 1) {
+    sequence <- c(sequence, next_num) # append next number to vector
+    next_num <- nextHappy(next_num) # find next number in sequence
+  } # end loop if n = 1 or if sequence loops to first number
+  isHappy <- FALSE
+  if (next_num == 1) {
+    isHappy <- TRUE
+    sequence <- c(sequence, next_num)
+    return(list(sequence = sequence, isHappy = isHappy)) # return happy sequence and TRUE
+  } # input is happy by checking if while loop ended because last number was 1.
+  return(list(isHappy = isHappy)) # only return isHappy if it is FALSE
+}
+
+# reproduce examples
+happySequence(19)
+happySequence(4)
+```
+
+### Part c
+```{r}
+# count how many are happy
+happy_count <- 0
+for (num in seq(1:1000)) {
+  if (happySequence(num)$isHappy) {
+    happy_count <- happy_count + 1
+  }
+}
+print(happy_count)
+# find percentage
+print(happy_count/1000)
+# find longest sequence
+longest_seq <- c()
+for (num in seq(1:1000)) {
+  if (happySequence(num)$isHappy) {
+    if (length(happySequence(num)$sequence) > length(longest_seq)) {
+      longest_seq <- happySequence(num)$sequence
+    }
+  }
+}
+print(longest_seq)
+```
+
